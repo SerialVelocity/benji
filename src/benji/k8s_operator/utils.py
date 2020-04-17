@@ -1,16 +1,14 @@
 import inspect
-import string
 import random
-from typing import Dict, Any
+import string
+from typing import Dict, Any, Sequence
 
 import kopf
 
-from benji.helpers import settings
-from benji.helpers.constants import VERSION_LABELS, LABEL_K8S_PVC_NAMESPACE, LABEL_INSTANCE, LABEL_K8S_PVC_NAME, \
-    LABEL_K8S_PV_NAME, LABEL_K8S_STORAGE_CLASS_NAME, LABEL_K8S_PV_TYPE, PV_TYPE_RBD, LABEL_RBD_CLUSTER_FSID, \
-    LABEL_RBD_IMAGE_SPEC
 from benji.api import APIClient
-from benji.helpers.utils import keys_exist
+from benji.helpers import settings
+from benji.k8s_operator.crd.version import VERSION_LABELS, LABEL_K8S_PVC_NAMESPACE, LABEL_INSTANCE, LABEL_K8S_PVC_NAME, \
+    LABEL_K8S_PV_TYPE, LABEL_RBD_IMAGE_SPEC, PV_TYPE_RBD, LABEL_K8S_PV_NAME
 
 SERVICE_NAMESPACE_FILENAME = '/var/run/secrets/kubernetes.io/serviceaccount/namespace'
 
@@ -97,3 +95,19 @@ def determine_rbd_image_location(pv: Dict[str, Any], logger) -> (str, str):
 
 def random_string(length: int, characters: str = string.ascii_lowercase + string.digits) -> str:
     return ''.join(random.choice(characters) for _ in range(length))
+
+
+def keys_exist(obj: Any, keys: Sequence[str]) -> bool:
+    split_keys = [attr.split('.') for attr in keys]
+
+    for split_key in split_keys:
+        position = obj
+        for component in split_key:
+            try:
+                position = position.get(component, None)
+            except AttributeError:
+                return False
+            if position is None:
+                return False
+
+    return True
